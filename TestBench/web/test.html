@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        * {
+            padding: 0; margin: 0;;
+        }
+        #imgC{
+            min-width: 150px; min-height: 100px; border: 1px solid blue;
+            width: 400px; height: 300px;
+        }
+        #startConvBtn{
+            height: fit-content;
+            width: fit-content;
+        }
+        #convC{
+            min-width: 150px; min-height: 100px; border: 1px solid blue;
+            width: 400px; height: 300px;
+        }
+        #optionsDiv{
+            display: flex; flex-direction: column; max-width: 300px;
+        }
+        #optionsDiv input{
+            max-width: 40px;
+        }
+
+    </style>    
+</head>
+<body>
+    <div style="display: flex; flex-direction: row;">
+    <input id="fileUpload" type="file" >
+    <canvas id="imgC"></canvas>
+    <div id="optionsDiv">
+        <button id="startConvBtn">Start Convolution</button>
+        <label>kernel</label>
+        <div style="display: grid; grid-template-rows: 1fr 1fr 1fr; grid-template-columns: 1fr 1fr 1fr; width: auto;">
+            <input type="number"/> <input type="number"/> <input type="number"/>
+            <input type="number"/><input type="number"/><input type="number"/>
+            <input type="number"/><input type="number"/><input type="number"/>
+        </div>
+    </div>
+    <canvas id="convC"></canvas>
+    </div>
+    
+    <script>
+        let imgCa = document.getElementById("imgC")
+        let convCa = document.getElementById("convC")
+        
+        let imgCtx = imgCa.getContext("2d");
+        let convCtx = convCa.getContext("2d");
+
+        let fileIn = document.getElementById("fileUpload")
+        fileIn.addEventListener("change", async (evt)=>{
+            // alert("setting images")
+            let file1 = evt.target.files[0];
+            const bitmap = await createImageBitmap(file1);
+            let drawWidth, drawHeight;
+            if (( bitmap.width / bitmap.height) > imgCa.width / imgCa.height) {
+                // Image is wider than canvas
+                drawWidth = imgCa.width;
+                drawHeight = drawWidth / ( bitmap.width / bitmap.height);
+            } else {
+                // Image is taller than canvas
+                drawHeight = imgCa.height;
+                drawWidth = drawHeight * ( bitmap.width / bitmap.height);
+            }
+            const x = ( imgCa.width - drawWidth) / 2;
+            const y = ( imgCa.height - drawHeight) / 2;
+            imgCtx.drawImage(bitmap, x, y, drawWidth, drawHeight );
+        })
+
+        let btn = document.getElementById("startConvBtn")
+
+        function convolve2d(image, kernel) {
+            const output = [];
+            const kernelWidth = kernel[0].length;
+            const kernelHeight = kernel.length;
+            const imageWidth = image[0].length;
+            const imageHeight = image.length;
+
+            for (let y = 0; y < imageHeight - kernelHeight + 1; y++) {
+                output.push([]);
+                for (let x = 0; x < imageWidth - kernelWidth + 1; x++) {
+                let sum = 0;
+                for (let ky = 0; ky < kernelHeight; ky++) {
+                    for (let kx = 0; kx < kernelWidth; kx++) {
+                    sum += image[y + ky][x + kx] * kernel[ky][kx];
+                    }
+                }
+                output[y].push(sum);
+                }
+            }
+
+            return output;
+        }
+
+        btn.addEventListener("click", async (evt) => {
+            let data = imgCtx.getImageData(0, 0, imgCa.width, imgCa.height).data
+            let pixelsData = new Array(imgCa.height).fill(new Array(imgCa.width));
+            console.log(data);
+            for (let i = 0; i < imgCa.height; i++) {
+                for(let j = 0; j < imgCa.width; j++){
+                    pixelsData[i][j] = (data[i * imgCa.width + j * 4]);
+                }
+            }
+            console.log("filled ", pixelsData)
+            let convoluted = convolve2d(pixelsData, [
+                [1, 0, -1],
+                [1, 0, -1],
+                [1, 0, -1]
+            ]);
+            console.log("Convoluted data ", convoluted);
+            let dataConvImg = convCtx.createImageData(imgCa.width, imgCa.height);
+            setConvolutedImg(dataConvImg.data, convoluted);
+            convCtx.putImageData(dataConvImg, 0, 0);
+        })
+
+
+        function setConvolutedImg(image, imgArray){
+            for (let i = 0; i < imgArray.length; i++) {
+                for (let j = 0; j < imgArray[0].length; j++) {
+                    image[i * imgArray[0].length + j + 0] = imgArray[i][j];
+                    image[i * imgArray[0].length + j + 1] = imgArray[i][j];
+                    image[i * imgArray[0].length + j + 2] = imgArray[i][j];
+                    image[i * imgArray[0].length + j + 3] = 255;
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>
