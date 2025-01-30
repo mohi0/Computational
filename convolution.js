@@ -14,7 +14,15 @@ convolute1D(arr, karr){
 }
 
 
-convolute2D(arr, karr){
+convolute2D(arr, karr, w, h){
+  let kSize = karr.length;
+  let arrSize = arr.length;
+  for(let i = 0; i < h; i++){
+    for(let j = 0; j < w; j++){
+      
+    }
+  }
+
 }
 
 convolute3D(arr, karr){
